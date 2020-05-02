@@ -1,9 +1,9 @@
 import React from 'react'
-
-function Main() {
+import { Title } from './styles'
+export default function Main() {
   return (
-    <div>Main</div>
+    <Title>
+      Main
+    </Title>
   )
 }
-
-export default Main

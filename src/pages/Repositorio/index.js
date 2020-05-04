@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Container, Owner, Loading, BackButton, IssuesList, PageActions } from './styles'
+import { Container, Owner, Loading, BackButton, IssuesList, PageActions, FilterList } from './styles'
 import { FaArrowLeft } from 'react-icons/fa'
 import api from '../../services/api'
 
@@ -9,6 +9,12 @@ function Respositorio({ match }) {
   const [issues, setIssues] = useState([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
+  const [filters, setFilters] = useState([
+    { state: 'all', label: 'Todas', active: true },
+    { state: 'open', label: 'Abertas', active: false },
+    { state: 'closed', label: 'Fechadas', active: false },
+  ])
+  const [filterIndex, setFilterIndex] = useState(0)
 
   useEffect(() => {
     async function load() {
@@ -18,7 +24,7 @@ function Respositorio({ match }) {
         api.get(`/repos/${nomeRepo}`),
         api.get(`/repos/${nomeRepo}/issues`, {
           params: {
-            state: 'open',
+            state: filters.find((item) => item.active).state,
             per_page: 5
           }
         })
@@ -31,22 +37,27 @@ function Respositorio({ match }) {
     }
     load()
   }, [match.params.repo])
-  useEffect(()=>{
+  useEffect(() => {
     async function loadIssue() {
       const nomeRepo = decodeURIComponent(match.params.repo)
-      const response = await api.get(`/repos/${nomeRepo}/issues`,{
-        params:{
-          state:'open',
-          page:page,
-          per_page:5,
+      const response = await api.get(`/repos/${nomeRepo}/issues`, {
+        params: {
+          state: filters[filterIndex].state,
+          page: page,
+          per_page: 5,
         }
       })
       setIssues(response.data)
+      console.log(filterIndex)
+
     }
     loadIssue()
-  },[match.params.repo,page])
+  }, [match.params.repo, page, filterIndex, filters])
   function handlePage(action) {
     setPage(action === 'back' ? page - 1 : page + 1)
+  }
+  function handleFilter(index) {
+    setFilterIndex(index)
   }
   if (loading) {
     return (
@@ -68,6 +79,16 @@ function Respositorio({ match }) {
         </h1>
         <p>{repositorio.description}</p>
       </Owner>
+      <FilterList active={filterIndex}>
+        {filters.map((item, index) => (
+          <button
+            type='button'
+            key={item.label}
+            onClick={() => { handleFilter(index) }}
+          // onClick={setFilterIndex(index)}
+          >{item.label}</button>
+        ))}
+      </FilterList>
       <IssuesList>
         {issues.map(issue => (
           <li key={String(issue.id)}>
@@ -85,7 +106,7 @@ function Respositorio({ match }) {
         ))}
       </IssuesList>
       <PageActions>
-        <button type='button' onClick={() => handlePage('back')} disabled={page<2}>Voltar</button>
+        <button type='button' onClick={() => handlePage('back')} disabled={page < 2}>Voltar</button>
         <button type='button' onClick={() => handlePage('next')}>Proxima</button>
       </PageActions>
     </Container>
